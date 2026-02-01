@@ -153,9 +153,9 @@ def compute_metrics(p):
             
             
 def main():
-    #token_labeling('data')
+    #token_labeling('raw_data')
     
-    OUTPUT_FOLDER = 'outputs'
+    INPUT_FOLDER = 'processed_data'
 
     # заряжаем токенайзер:
     model_name = 'bert-base-german-cased'
@@ -177,9 +177,9 @@ def main():
     
     
     # собираем пути к частям нашего датасета:
-    train_path = os.path.join(OUTPUT_FOLDER, 'train.jsonl')
-    dev_path = os.path.join(OUTPUT_FOLDER, 'dev.jsonl')
-    test_path = os.path.join(OUTPUT_FOLDER, 'test.jsonl')
+    train_path = os.path.join(INPUT_FOLDER, 'train.jsonl')
+    dev_path = os.path.join(INPUT_FOLDER, 'dev.jsonl')
+    test_path = os.path.join(INPUT_FOLDER, 'test.jsonl')
     
     #upload the dataset (in appropriate for HF format):
     dataset = load_dataset("json", data_files={
