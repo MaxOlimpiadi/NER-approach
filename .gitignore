@@ -1,4 +1,5 @@
 agentivity_tc_clean_*/checkpoint*
+outputs_single_label/*
 **/*.ckpt
 **/*.pt
 **/*.pth

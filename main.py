@@ -42,7 +42,7 @@ def token_labeling(input_folder):
                     for category in categories:
                         
                         # check whether the whole category toekns are included into the phrase:
-                        if not set(ann[category]['tokenIds']).issubset(ann['phrase']):
+                        if not set(ann[category]['tokenIds']).issubset(ann['phrase']['tokenIds']):
                             continue # if not - omit it
                             
                         if ann[category]['tokenIds']:
@@ -98,11 +98,12 @@ def make_tokenize_and_align_labels(tokenizer, label2id):
                 elif word_idx != previous_word_idx: # типа если новое слово началось
                     label_ids.append(label2id[labels[word_idx]]) # word_idx - всегда указывает на исходный токен. Стало быть и лейбл его мы изи вытягивем. Но лейбл именно в цифровом формате для HF!
                 else:
-                    # тот же токен → продолжение
-                    if labels[word_idx].startswith("B-"):
-                        label_ids.append(label2id["I-" + labels[word_idx][2:]])
-                    else:
-                        label_ids.append(label2id[labels[word_idx]])
+                    # # тот же токен → продолжение
+                    # if labels[word_idx].startswith("B-"):
+                    #     label_ids.append(label2id["I-" + labels[word_idx][2:]])
+                    # else:
+                    #     label_ids.append(label2id[labels[word_idx]])
+                    label_ids.append(-100)
     
                 previous_word_idx = word_idx
     
@@ -126,9 +127,7 @@ def compute_metrics(p):
     
     label_list = [
     "O",
-    "B-AG", "I-AG",
-    "B-LA", "I-LA",
-    "B-PS", "I-PS"
+    "B-AG", "I-AG"
     ]
     
     label2id = {l: i for i, l in enumerate(label_list)} # 'O' -> 0, 'B-AG' -> 1, ...
@@ -159,105 +158,103 @@ def compute_metrics(p):
             
             
 def main():
-    token_labeling('raw_data')
+    #token_labeling('raw_data')
     
     
-#     INPUT_FOLDER = 'processed_data'
+    INPUT_FOLDER = 'one-label-processed-data'
 
-#     # заряжаем токенайзер:
-#     model_name = 'bert-base-german-cased'
-#     tokenizer = AutoTokenizer.from_pretrained(model_name)
+    # заряжаем токенайзер:
+    model_name = 'LSX-UniWue/ModernGBERT_134M'
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
 
-#     # снаряжаем датаколлатор, чтобы автоматически выравнивал тензоры не нулями, а -100
-#     data_collator = DataCollatorForTokenClassification(tokenizer=tokenizer)    
+    # снаряжаем датаколлатор, чтобы автоматически выравнивал тензоры не нулями, а -100
+    data_collator = DataCollatorForTokenClassification(tokenizer=tokenizer)    
 
-#     # подготавливаем инфу о лейблах в нужных форматах:
-#     label_list = [
-#     "O",
-#     "B-AG", "I-AG",
-#     "B-LA", "I-LA",
-#     "B-PS", "I-PS"
-#     ]
+    # подготавливаем инфу о лейблах в нужных форматах:
+    label_list = [
+    "O",
+    "B-AG", "I-AG"
+    ]
     
-#     label2id = {l: i for i, l in enumerate(label_list)} # 'O' -> 0, 'B-AG' -> 1, ...
-#     id2label = {i: l for l, i in label2id.items()} # 0 -> 'O', 1 -> 'B-AG', ...
+    label2id = {l: i for i, l in enumerate(label_list)} # 'O' -> 0, 'B-AG' -> 1, ...
+    id2label = {i: l for l, i in label2id.items()} # 0 -> 'O', 1 -> 'B-AG', ...
     
     
-#     # собираем пути к частям нашего датасета:
-#     train_path = os.path.join(INPUT_FOLDER, 'train.jsonl')
-#     dev_path = os.path.join(INPUT_FOLDER, 'dev.jsonl')
-#     test_path = os.path.join(INPUT_FOLDER, 'test.jsonl')
+    # собираем пути к частям нашего датасета:
+    train_path = os.path.join(INPUT_FOLDER, 'train.jsonl')
+    dev_path = os.path.join(INPUT_FOLDER, 'dev.jsonl')
+    test_path = os.path.join(INPUT_FOLDER, 'test.jsonl')
     
-#     #upload the dataset (in appropriate for HF format):
-#     dataset = load_dataset("json", data_files={
-#         "train": train_path,
-#         "validation": dev_path,
-#         "test": test_path
-#     })
+    #upload the dataset (in appropriate for HF format):
+    dataset = load_dataset("json", data_files={
+        "train": train_path,
+        "validation": dev_path,
+        "test": test_path
+    })
     
     
     
-# #--------------------Tokenization and alignment---------------------------------   
-#     # call the function "tokenize_and_align_labels" for every instance in dataset
-#     # в итоге получаем обновлённый датасет уже. А batched = true - для оптизимации
-#     fabricated_function = make_tokenize_and_align_labels(tokenizer, label2id)
-#     tokenized_dataset = dataset.map(fabricated_function, batched=True)
+#--------------------Tokenization and alignment---------------------------------   
+    # call the function "tokenize_and_align_labels" for every instance in dataset
+    # в итоге получаем обновлённый датасет уже. А batched = true - для оптизимации
+    fabricated_function = make_tokenize_and_align_labels(tokenizer, label2id)
+    tokenized_dataset = dataset.map(fabricated_function, batched=True)
 
-#     #print(tokenized_dataset["train"][0])
-# #------------------------------------------------------------------------------
+    #print(tokenized_dataset["train"][0])
+#------------------------------------------------------------------------------
 
 
-#     # Creating the model:
-#     model = AutoModelForTokenClassification.from_pretrained( # просто добавляем к претрейнед выбранной модели ещё 1 голову (слой), которую мы будем обучать через NER)
-#         model_name,
-#         num_labels=len(label_list),
-#         id2label=id2label,
-#         label2id=label2id
-#     )
+    # Creating the model:
+    model = AutoModelForTokenClassification.from_pretrained( # просто добавляем к претрейнед выбранной модели ещё 1 голову (слой), которую мы будем обучать через NER)
+        model_name,
+        num_labels=len(label_list),
+        id2label=id2label,
+        label2id=label2id
+    )
     
     
     
-#     #Specify the config for the training:
-#     training_args = TrainingArguments (
-#         output_dir = "./agentivity_tc_clean_3",
-#         eval_strategy = "epoch",
-#         save_strategy = "epoch",
-#         #save_strategy = "no",
-#         learning_rate = 2e-5,
-#         weight_decay = 0.01,
-#         num_train_epochs = 3,
-#         per_device_train_batch_size = 8,
-#         per_device_eval_batch_size = 8,
-#         #logging_steps = 50,
-#         logging_steps = 10, # было 10
-#         load_best_model_at_end = True,
-#         #load_best_model_at_end = False,
-#         metric_for_best_model = "f1",
-#         greater_is_better = True,
-#         save_total_limit = 2,
-#         logging_strategy="steps",
-#         # for experiment:
-#         disable_tqdm=True,
-#         report_to="none",
-#     )
+    #Specify the config for the training:
+    training_args = TrainingArguments (
+        output_dir = "./outputs_single_label",
+        eval_strategy = "epoch",
+        save_strategy = "epoch",
+        #save_strategy = "no",
+        learning_rate = 2e-5,
+        weight_decay = 0.01,
+        num_train_epochs = 3,
+        per_device_train_batch_size = 8,
+        per_device_eval_batch_size = 8,
+        #logging_steps = 50,
+        logging_steps = 10, # было 10
+        load_best_model_at_end = True,
+        #load_best_model_at_end = False,
+        metric_for_best_model = "f1",
+        greater_is_better = True,
+        save_total_limit = 2,
+        logging_strategy="steps",
+        # for experiment:
+        disable_tqdm=True,
+        report_to="none",
+    )
     
-#     trainer = Trainer (
-#         model=model,
-#         args=training_args,
-#         train_dataset=tokenized_dataset["train"],
-#         eval_dataset=tokenized_dataset["validation"],
-#         #tokenizer=tokenizer,
-#         data_collator=data_collator,
-#         compute_metrics=compute_metrics,  # можешь убрать, если пока не хочешь метрики
-#     )
+    trainer = Trainer (
+        model=model,
+        args=training_args,
+        train_dataset=tokenized_dataset["train"],
+        eval_dataset=tokenized_dataset["validation"],
+        #tokenizer=tokenizer,
+        data_collator=data_collator,
+        compute_metrics=compute_metrics,  # можешь убрать, если пока не хочешь метрики
+    )
     
     
-#     # Implementing training process:
-#     train_output = trainer.train()
-#     print("TRAIN OUTPUT:", train_output)
+    # Implementing training process:
+    train_output = trainer.train()
+    print("TRAIN OUTPUT:", train_output)
     
-#     test_metrics = trainer.evaluate(eval_dataset=tokenized_dataset["test"])
-#     print("TEST METRICS:", test_metrics)
+    test_metrics = trainer.evaluate(eval_dataset=tokenized_dataset["test"])
+    print("TEST METRICS:", test_metrics)
         
     
     
