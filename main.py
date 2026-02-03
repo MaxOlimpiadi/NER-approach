@@ -16,10 +16,11 @@ from transformers import Trainer, TrainingArguments
 import numpy as np
 from seqeval.metrics import f1_score, precision_score, recall_score
 from evaluate import load
+from seqeval.metrics import accuracy_score
 
 def token_labeling(input_folder):
     #categories = ['agentive', 'low_agentive', 'passive']
-    categories = ['agentive']
+    categories = ['low_agentive']
     
     dict_labels = {'agentive': 'AG', 'low_agentive': 'LA', 'passive': 'PS'}
     
@@ -127,7 +128,7 @@ def compute_metrics(p):
     
     label_list = [
     "O",
-    "B-AG", "I-AG"
+    "B-LA", "I-LA"
     ]
     
     label2id = {l: i for i, l in enumerate(label_list)} # 'O' -> 0, 'B-AG' -> 1, ...
@@ -148,6 +149,7 @@ def compute_metrics(p):
         "precision": precision_score(true_labels, true_preds),
         "recall": recall_score(true_labels, true_preds),
         "f1": f1_score(true_labels, true_preds),
+        "accuracy": accuracy_score(true_labels, true_preds)
     }
 
     
@@ -158,10 +160,10 @@ def compute_metrics(p):
             
             
 def main():
-    #token_labeling('raw_data')
+    # token_labeling('raw_data')
     
     
-    INPUT_FOLDER = 'one-label-processed-data'
+    INPUT_FOLDER = 'one-label-processed-data/low_agentive'
 
     # заряжаем токенайзер:
     model_name = 'LSX-UniWue/ModernGBERT_134M'
@@ -173,7 +175,7 @@ def main():
     # подготавливаем инфу о лейблах в нужных форматах:
     label_list = [
     "O",
-    "B-AG", "I-AG"
+    "B-LA", "I-LA"
     ]
     
     label2id = {l: i for i, l in enumerate(label_list)} # 'O' -> 0, 'B-AG' -> 1, ...
